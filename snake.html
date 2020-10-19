@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Snake Game</title>
+    <style>
+        canvas {
+            border: 7px solid darkblue;
+            text-align: center;
+            display: inline;
+        }
+        #containsCanvas{
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body onkeydown="keyPressed(event)">
+    <script>
+        // Setting up game canvas
+        const CANVAS_WIDTH = 720;
+        const CANVAS_HEIGHT = 420;
+        let canvas = document.createElement("canvas");
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+        canvas.style.backgroundColor = "#F0F8FF";
+
+        // Encapsulating canvas into a div
+        let div2 = document.createElement('div');
+        div2.appendChild(canvas);
+        div2.id = 'containsCanvas';
+        let canvas_ctx = canvas.getContext("2d");
+        document.body.insertBefore(div2, document.body.childNodes[0]);
+
+        // Snake Piece (initially just one rectangle)          
+        let gamePiece = [{ x: CANVAS_WIDTH / 2 - 20, y: CANVAS_HEIGHT / 2 - 10 }]
+
+        // An array of snake food
+        let classes = [101, 114, 160, 161, 214, 215, 216, 220, 300, 303, 306, 307, 310, 311, 312, 316, 320, 327, 334, 337, 351, 
+        352, 354, 371, 373, 376, 380, 385, 416, 506, 512, 526, 527, 532, 540, 541, 544, 545, 548, 550, 555, 564, 566, 600, 645];
+
+        // Snake Food - Getting random index from array and positioning it at random coordinate on canvas.
+        let index = parseInt(Math.random() * classes.length);
+        let gameFoodX = CANVAS_WIDTH / 2 - 20;
+        let gameFoodY = CANVAS_HEIGHT / 5 - 4;
+        let gameFoodIndex = index;
+
+        //Horizontal and Vertical Velocity
+        let dx = 0;
+        let dy = 0;
+
+        // Key Codes
+        const UP_KEY = 38;
+        const DOWN_KEY = 40;
+        const LEFT_KEY = 37;
+        const RIGHT_KEY = 39;
+
+        // Current direction of Snake
+        let goingUp = false;
+        let goingDown = false;
+        let goingLeft = false;
+        let goingRight = false; 
+
+        // Setting up score
+        let score = 0;     
+        let h1 = document.createElement('h1');
+        h1.textContent = "Score:";
+        h1.style.color = "#800000";
+        let counter = document.createElement('h1');
+        counter.id = "score"
+        counter.textContent = score;
+        counter.style.color = "#800000";
+
+        // Encapsulating score into a div
+        let div = document.createElement("div");
+        div.appendChild(h1);
+        div.appendChild(counter);
+        div.align = "center";
+        document.body.appendChild(div);
+
+        // Start the game
+        gameArea();
+
+        function gameArea() {
+            const interval1 = setInterval(updateGameArea, 140);
+            const interval2 = setInterval(newPiecePosition, 140);
+            const interval3 = setInterval(drawGamePiece, 140);
+            const interval4 = setInterval(checkGameEnd, 140);
+        }
+
+        function checkGameEnd(){
+            const size = gamePiece.length;
+            if(size > 1){
+                for(let i = 1; i < size; i++){
+                    if(gamePiece[i].x == gamePiece[0].x && gamePiece[i].y == gamePiece[0].y)
+                        alert("Game Ended: Snake Crashed Into Itself!");
+                }
+            }
+
+            const crashTop = gamePiece[0].y < 0;
+            const crashBottom = gamePiece[0].y >= CANVAS_HEIGHT;
+            const crashLeft = gamePiece[0].x < 0;
+            const crashRight = gamePiece[0].x >= CANVAS_WIDTH;
+            if(crashTop || crashBottom || crashLeft || crashRight)
+                alert("Game Ended: Snake Hit Wall!");
+        }
+
+        function clearCanvas() {
+            canvas_ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        }
+
+        function updateGameArea() {
+            clearCanvas();
+            updateGameFood();
+        }
+
+        function drawGamePiece(){
+            let size = gamePiece.length;
+            for(let i = 0; i < size; i++){
+                updateGamePiece(gamePiece[i], i)
+            }
+        }
+
+        function updateGamePiece(piece, index){
+            if(index == 0)
+                canvas_ctx.fillStyle = "blue";
+            else
+                canvas_ctx.fillStyle = "green";
+            canvas_ctx.fillRect(piece.x, piece.y, 20, 20);
+            canvas_ctx.strokeRect(piece.x, piece.y, 20, 20)
+        }
+
+        function newPiecePosition(piece){
+            gamePiece.unshift({x: gamePiece[0].x + dx, y: gamePiece[0].y + dy});
+
+            // Check if snake ate food
+            const ate_food = gamePiece[0].x == gameFoodX && gamePiece[0].y == gameFoodY;
+            if (ate_food){
+                // Update and display score
+                score += 1;
+                document.getElementById("score").innerHTML = score;
+
+                // Get new food position
+                newFoodPosition();
+            }
+            else
+                gamePiece.pop();
+        }
+
+        function updateGameFood(){
+            canvas_ctx.fillStyle = "red";
+            canvas_ctx.fillRect(gameFoodX, gameFoodY, 20, 20);
+            canvas_ctx.fillStyle = "black";
+            canvas_ctx.fillText(classes[index], gameFoodX+2, gameFoodY+13);
+        }
+
+        function newFoodPosition(){
+            // Remove item at index from array
+            classes.splice(index, 1);
+
+            // If all items have been eaten, user won game
+            if(classes.length == 0)
+                alert("You Won The Game!!");
+
+            // Else get random index for array for new food item
+            index = parseInt(Math.random() * classes.length);
+
+            // Get new random position for food
+            let x = parseInt(Math.random() * CANVAS_WIDTH);
+            let mod1 = x % 20;
+            gameFoodX = x - mod1;
+            let y = parseInt(Math.random() * CANVAS_HEIGHT);
+            let mod2 = y % 20;
+            gameFoodY = y - mod2;
+        }
+
+        function keyPressed(event) {
+            let code = event.keyCode;
+
+            if (code == UP_KEY && !goingDown) {
+                dx = 0;
+                dy = -20;
+                goingUp = true;
+                goingLeft = goingRight = goingDown = false;
+            }
+            else if (code == DOWN_KEY && !goingUp) {
+                dx = 0;
+                dy = 20;
+                goingDown = true;
+                goingLeft = goingRight = goingUp = false;
+            }
+            else if (code == LEFT_KEY && !goingRight) {
+                dx = -20;
+                dy = 0;
+                goingLeft = true;
+                goingRight = goingUp = goingDown = false;
+            }
+            else if (code == RIGHT_KEY && !goingLeft) {
+                dx = 20;
+                dy = 0;
+                goingRight = true;
+                goingLeft = goingUp = goingDown = false;
+            }
+        }
+    </script>
+</body>
+
+</html>
